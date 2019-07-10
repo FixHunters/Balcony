@@ -1,0 +1,11 @@
+Please add your static resources here
+
+Spustenie Aplikacie
+- BalconyApplication
+
+9.4.2019
+- na spustanit jobu je potrebne naimplementovat do projektu @scheduled (cron)
+28.4.2019
+- naimplementovany job balconyServise spusta sa kazdych par sekund
+1.7.2019
+- precistenie projektu a nahratie ho do githubu
