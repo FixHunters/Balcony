@@ -61,6 +61,13 @@
 		    <artifactId>swagger-annotations</artifactId>
 		    <version>1.5.19</version>
 		</dependency>
+
+		<!-- Je tu kvoli posielaniu mailov -->
+		<dependency>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>javax.mail</artifactId>
+			<version>1.5.5</version>
+		</dependency>
 		
 		    <dependency>
         <groupId>log4j</groupId>

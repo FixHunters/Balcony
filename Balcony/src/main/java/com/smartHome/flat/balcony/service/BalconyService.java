@@ -18,7 +18,6 @@ package com.smartHome.flat.balcony.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.smartHome.flat.balcony.model.DataResponse;
@@ -110,16 +109,79 @@ public class BalconyService {
 	 * 
 	 * @return
 	 */
-	 @Scheduled(cron = "${app.run.waterPump}")
+	// @Scheduled(cron = "${app.run.waterPump}")
 	public void runCroneJob() {
-		logger.info("Automated cron job started");
+		logger.info("Automated cron watering job started");
 		try {
 			gpioBalcony.waterPumpAutomat(10);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		logger.info("Automated cron finished");
+		logger.info("Automated cron watering finished");
 	}
+	 
+		/**
+		 * method for logging battery status
+		 *
+		 * 
+		 * @return
+		 */
+		// @Scheduled(cron = "${app.run.battery.log}")
+		public void runBatteryStatusCron() {
+			 try {
+				 gpioBalcony.adcFunction();			
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+
+		}
+	 
+		/**
+		 * method for setup ADC converter
+		 *
+		 * 
+		 * @return {@link SensorsResponseEntityReply} instance
+		 */
+		public Double setConverterADC() {
+			try {
+				return gpioBalcony.adcFunction();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		/**
+		 * method for check PIR sensor
+		 *
+		 * 
+		 * @return {@link SensorsResponseEntityReply} instance
+		 */
+		//@Scheduled(fixedRate=1000)
+		public Boolean getPIR() {
+			try {
+				return gpioBalcony.checkMotionSensorPIR();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return false;
+		}
+		
+		
+		/**
+		 * method for start python script
+		 *
+		 * 
+		 * @return {@link SensorsResponseEntityReply} instance
+		 */
+		public void runPython(String mode) {
+			gpioBalcony.executePython(mode);
+	
+		}
 
 }
