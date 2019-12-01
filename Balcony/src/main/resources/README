@@ -9,3 +9,31 @@ Spustenie Aplikacie
 - naimplementovany job balconyServise spusta sa kazdych par sekund
 1.7.2019
 - precistenie projektu a nahratie ho do githubu
+1.9
+- implementacia ADC prevodniku
+- implementacia restart endpointu
+
+***** VYPNUTIE OBRAZOVKY *****
+1, sudo nano /etc/rc.local
+2, /usr/bin/tvservice -o
+
+
+***** SHUTDOWN CONSOLA *****
+sudo shutdown -h now
+
+9.11
+- implemetacia spustania python scriptu pre kameru
+
+25.11 
+dokoncenie crone jobu pre nastavenie a spustanie cerpadla
+
+Treba spravit posielanie foto
+https://www.baeldung.com/spring-controller-return-image-file
+
+Dokoncit posielanie e-mail ak je to potrebne
+
+1.12
+posledny commit vsetkych veci
+TODO
+-spravit asynchronne vlakno na check PIR senzoru
+-nakonfigurovt mail sender

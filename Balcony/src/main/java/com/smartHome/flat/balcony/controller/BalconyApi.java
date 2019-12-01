@@ -21,6 +21,54 @@ import io.swagger.annotations.ApiResponses;
 )
 @Api(value = "tpps", description = "the status API")
 public interface BalconyApi {
+	
+	  @ApiOperation(
+			    value = "",
+			    nickname = "getPIR",
+			    notes = "Get PIR motion status",
+			    response = SensorsResponseEntity.class,
+			    tags = {}
+			  )
+			  @ApiResponses(
+			    value = {
+			      @ApiResponse(
+			        code = 200,
+			        message = "Get PIR motion was sucessful",
+			        response = SensorsResponseEntity.class
+			      ),
+			      @ApiResponse(code = 400, message = "Wrong input data format", response = Error.class)
+			    }
+			  )
+			  @RequestMapping(
+			    value = "/pir",
+			    produces = {"application/json"},
+			    method = RequestMethod.GET
+			  )
+			  Boolean getPir();
+	
+	  @ApiOperation(
+			    value = "",
+			    nickname = "getADC",
+			    notes = "Setup ADC converter",
+			    response = SensorsResponseEntity.class,
+			    tags = {}
+			  )
+			  @ApiResponses(
+			    value = {
+			      @ApiResponse(
+			        code = 200,
+			        message = "Setup ADC converter was sucessful",
+			        response = SensorsResponseEntity.class
+			      ),
+			      @ApiResponse(code = 400, message = "Wrong input data format", response = Error.class)
+			    }
+			  )
+			  @RequestMapping(
+			    value = "/adc",
+			    produces = {"application/json"},
+			    method = RequestMethod.GET
+			  )
+			  Double getAdc();
 
   @ApiOperation(
     value = "",
