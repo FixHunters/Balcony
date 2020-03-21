@@ -131,7 +131,6 @@ public interface BalconyApi {
 		      @ApiResponse(
 		        code = 200,
 		        message = "The operation was successful"
-		        //response = SensorsResponseEntity.class
 		      ),
 		      @ApiResponse(code = 400, message = "Wrong input data format", response = Error.class)
 		    }
@@ -142,5 +141,28 @@ public interface BalconyApi {
 		    method = RequestMethod.POST
 		  )
   		void setAutomateWatering();
-		//Boolean patchWaterPump();
+  
+/*  @ApiOperation(
+		    value = "",
+		    nickname = "getRadio",
+		    notes = "Retrieve radio stations",
+		    response = SensorsResponseEntity.class,
+		    tags = {}
+		  )
+		  @ApiResponses(
+		    value = {
+		      @ApiResponse(
+		        code = 200,
+		        message = "The operation was successful",
+		        response = SensorsResponseEntity.class
+		      ),
+		      @ApiResponse(code = 400, message = "Wrong input data format", response = Error.class)
+		    }
+		  )
+		  @RequestMapping(
+		    value = "/radio",
+		    produces = {"application/json"},
+		    method = RequestMethod.GET
+		  )
+  			List<Integer> getRadio();*/
 }

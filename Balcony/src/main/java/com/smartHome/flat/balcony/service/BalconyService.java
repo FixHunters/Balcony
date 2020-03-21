@@ -16,10 +16,14 @@
 
 package com.smartHome.flat.balcony.service;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 import com.smartHome.flat.balcony.model.DataResponse;
 import com.smartHome.flat.balcony.model.SensorsResponseEntity;
 import com.smartHome.flat.balcony.sensors.GpioBalcony;
@@ -41,7 +45,7 @@ public class BalconyService {
 	TemperatureHumidity temperatureHumidity = new TemperatureHumidity();
 
 	/**
-	 * method for get BMP180 values
+	 * method for get BMP180 and other sensor values
 	 *
 	 * 
 	 * @return {@link SensorsResponseEntityReply} instance
@@ -50,8 +54,8 @@ public class BalconyService {
 
 		try {
 			DataResponse dataResponse = temperatureHumidity.main();
-			dataResponse.setSoilStatus(gpioBalcony.waterCheck().isHigh());
-			dataResponse.setRainStatus(gpioBalcony.rainDropsCheck().isHigh());
+			dataResponse.setSoilStatus(gpioBalcony.soilHumidityCheck());
+			dataResponse.setWaterLevel(gpioBalcony.waterCheck());
 			dataResponse.setWaterPumpStatus(gpioBalcony.waterPumpCheck().isHigh());
 			sensorsResponseEntity.setDataResponse(dataResponse);
 		} catch (Exception e) {
@@ -62,10 +66,10 @@ public class BalconyService {
 	}
 
 	/**
-	 * method for patch enable/disble waterPump
+	 * method for patch enable/disable waterPump
 	 *
 	 * 
-	 * @return {@link SensorsResponseEntityReply} instance
+	 * @return Boolean
 	 */
 	public Boolean patchWaterPump(String enabled) {
 		Boolean value = null;
@@ -76,7 +80,6 @@ public class BalconyService {
 			} else {
 				value = false;
 				gpioBalcony.waterPumpStop();
-				;
 			}
 
 		} catch (Exception e) {
@@ -91,7 +94,7 @@ public class BalconyService {
 	 * method for setup waterPumpAutomat
 	 *
 	 * 
-	 * @return {@link SensorsResponseEntityReply} instance
+	 * @return
 	 */
 	public void setAutomateWatering(String enable, String cycleTime) {
 		try {
@@ -143,7 +146,7 @@ public class BalconyService {
 		 * method for setup ADC converter
 		 *
 		 * 
-		 * @return {@link SensorsResponseEntityReply} instance
+		 * @return Double
 		 */
 		public Double setConverterADC() {
 			try {
@@ -159,7 +162,7 @@ public class BalconyService {
 		 * method for check PIR sensor
 		 *
 		 * 
-		 * @return {@link SensorsResponseEntityReply} instance
+		 * @return Boolean
 		 */
 		//@Scheduled(fixedRate=1000)
 		public Boolean getPIR() {
@@ -177,11 +180,81 @@ public class BalconyService {
 		 * method for start python script
 		 *
 		 * 
-		 * @return {@link SensorsResponseEntityReply} instance
 		 */
 		public void runPython(String mode) {
 			gpioBalcony.executePython(mode);
 	
+		}
+		
+		
+		/**
+		 * method for check water
+		 *
+		 * 
+		 * @return Boolean
+		 */
+		public Boolean checkWater() {
+			try {
+				return gpioBalcony.waterCheck();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		/**
+		 * method for check soil
+		 *
+		 * 
+		 * @return Boolean
+		 */
+		public Boolean checkSoil() {
+			try {
+				return gpioBalcony.soilHumidityCheck();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		/**
+		 * method for check light BH1750
+		 *
+		 * 
+		 * @return BigDecimal
+		 * @throws UnsupportedBusNumberException
+		 * @throws IOException
+		 */
+		public BigDecimal getLight() throws UnsupportedBusNumberException, IOException {
+			return gpioBalcony.getLight();
+		}
+		
+		/**
+		 * method for patch enable/disable waterPump
+		 *
+		 * 
+		 * @return Boolean
+		 */
+		public Boolean patchPowerBank(String enabled) {
+			Boolean value = null;
+			try {
+				if (enabled.equals("true")) {
+					value = true;
+					gpioBalcony.enablePW();;
+				} else {
+					value = false;
+					gpioBalcony.disablePW();
+					;
+				}
+
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			return value;
 		}
 
 }

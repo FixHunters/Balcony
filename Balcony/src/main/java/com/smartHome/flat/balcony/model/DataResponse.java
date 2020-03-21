@@ -22,7 +22,7 @@ public class DataResponse {
   private Boolean soilStatus = null;
   
  
-  private Boolean rainStatus = null;
+  private Boolean waterLevel = null;
   
   
   private Boolean waterPumpStatus = null;
@@ -110,23 +110,23 @@ public class DataResponse {
 	    this.soilStatus = soilStatus;
 	  }
 	  
-  public DataResponse rainStatus(Boolean rainStatus) {
-	    this.rainStatus = rainStatus;
+  public DataResponse waterLevel(Boolean waterLevel) {
+	    this.waterLevel = waterLevel;
 	    return this;
 	  }
 
 	  /**
-	   * Get rainStatus
+	   * Get waterLevel
 	   *
-	   * @return rainStatus
+	   * @return waterLevel
 	   */
 
-	  public Boolean getRainStatus() {
-	    return rainStatus;
+	  public Boolean getWaterLevel() {
+	    return waterLevel;
 	  }
 
-	  public void setRainStatus(Boolean rainStatus) {
-	    this.rainStatus = rainStatus;
+	  public void setWaterLevel(Boolean waterLevel) {
+	    this.waterLevel = waterLevel;
 	  }	  
 	 
   public DataResponse waterPumpStatus(Boolean waterPumpStatus) {
@@ -163,7 +163,7 @@ public class DataResponse {
     		Objects.equals(this.press, DataResponseReply.press) &&
     		Objects.equals(this.alt, DataResponseReply.alt) &&
     		Objects.equals(this.soilStatus, DataResponseReply.soilStatus) &&
-    		Objects.equals(this.rainStatus, DataResponseReply.rainStatus) &&
+    		Objects.equals(this.waterLevel, DataResponseReply.waterLevel) &&
     		Objects.equals(this.waterPumpStatus, DataResponseReply.waterPumpStatus);
   }
 
@@ -177,7 +177,7 @@ public class DataResponse {
     sb.append("    press: ").append(toIndentedString(press)).append("\n");
     sb.append("    alt: ").append(toIndentedString(alt)).append("\n");
     sb.append("    soilStatus: ").append(toIndentedString(soilStatus)).append("\n");
-    sb.append("    rainStatus: ").append(toIndentedString(rainStatus)).append("\n");
+    sb.append("    waterLevel: ").append(toIndentedString(waterLevel)).append("\n");
     sb.append("    waterPumpStatus: ").append(toIndentedString(waterPumpStatus)).append("\n");
     sb.append("}");
     return sb.toString();
