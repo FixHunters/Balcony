@@ -9,9 +9,10 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 
-
-/*
- * Altitude, Pressure, Temperature
+/**
+ * @author JPojezdala
+ *
+ * Altitude, Pressure, Temperature sensor controller
  */
 public class BMP180 {
 	private final static EndianReaders.Endianness BMP180_ENDIANNESS = EndianReaders.Endianness.BIG_ENDIAN;
@@ -304,6 +305,7 @@ public class BMP180 {
 		double altitude = 0.0;
 		float pressure = readPressure();
 		altitude = 44_330.0 * (1.0 - Math.pow(pressure / standardSeaLevelPressure, 0.1903));
+		log.info("BMP 180 pressure in readAltitude: "+pressure);
 		if (verbose)
 		    log.debug("DBG: Altitude = " + altitude);
 		return altitude;

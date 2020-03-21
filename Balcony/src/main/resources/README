@@ -37,3 +37,30 @@ posledny commit vsetkych veci
 TODO
 -spravit asynchronne vlakno na check PIR senzoru
 -nakonfigurovt mail sender
+
+12.1 2020
+-nakonfigurovanie druhe I2C
+-tuna /boot/config.txt trebalo pridat :
+	dtoverlay=i2c-gpio,i2c_gpio_delay_us=2
+spristupnilo mi to potom I2C3 BUS napi4j pine 4 a 5 	
+
+***** pridany svetelny senzor *****
+BH1750
+
+TODO dorobit konverziu
+120 000 lux Najjasnejšie slnečné svetlo
+111 000 lux Jasné slnečné svetlo
+109 870 lux AM 1,5 slnečné svetlo globálneho slnečného spektra
+20 000 luxov Tieň osvetlený celou jasnou modrou oblohou v poludnie
+1 000 - 2 000 luxov Typický oblačno, poludnie
+<200 lux Extrémne najhrubšie búrkové oblaky, poludnie
+400 lux Východ slnka alebo západu slnka za jasného dňa (okolité osvetlenie)
+40 lux Plne zamračené, západ slnka / svitania
+<1 lux Extrémne najhrubšie búrkové mraky, západ slnka / stúpania
+
+*** Ideas Modeler *** prehodit do smarthome projektu
+- pouzivam ho na spravenie diagramu pre smartHome
+
+21.3.2020
+URL repozitar v gitlabe
+https://github.com/FixHunters/Balcony/commits/master

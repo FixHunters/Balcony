@@ -7,6 +7,11 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author JPojezdala
+ *
+ * BMP180 controller
+ */
 public class EndianReaders {
 	
 	private static final Logger log = LoggerFactory.getLogger(EndianReaders.class);

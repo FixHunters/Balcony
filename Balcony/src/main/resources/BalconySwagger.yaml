@@ -4,14 +4,8 @@ info:
     This is a sample server Balcony server.
   version: 1.0.0
   title: Swagger Balcony
-host: petstore.swagger.io
-basePath: /v2
-tags:
-  - name: pet
-    description: Everything about your Pets
-    externalDocs:
-      description: Find out more
-      url: 'http://swagger.io'
+host: balcony.swagger.io
+basePath: /v1
 schemes:
   - http
 paths:  
@@ -26,13 +20,103 @@ paths:
         - application/json
       responses:
         '200':
-          description: successful operation
+          description: Successful operation
           schema:
             $ref: '#/definitions/SensorsResponseEntity'
         '400':
           description: Invalid ID supplied
         '404':
-          description: Pet not found
+          description: Not found
+  /adc:
+    get:
+      tags:
+        - BalconyController
+      summary: Get data from ADC converter (Battery Check)
+      description: Get data from ADC
+      operationId: getAdc
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/SensorsResponseEntity'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Not found
+  /pir:
+    get:
+      tags:
+        - BalconyController
+      summary: Get data from PIR sensor
+      description: Get data from PIR
+      operationId: getPIR
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/SensorsResponseEntity'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Not found   
+  /water:
+    get:
+      tags:
+        - BalconyController
+      summary: Check water status
+      description: Check the water level
+      operationId: getWater
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/SensorsResponseEntity'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Not found  
+  /soil:
+    get:
+      tags:
+        - BalconyController
+      summary: Check soil status
+      description: soil moisture control
+      operationId: getSoil
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/SensorsResponseEntity'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Not found 
+  /light:
+    get:
+      tags:
+        - BalconyController
+      summary: Check light intensity
+      description: Check light intensity
+      operationId: getLight
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/SensorsResponseEntity'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Not found 
   /waterPump:
     patch:
       tags:
@@ -47,176 +131,72 @@ paths:
           in: header
           required: true
           type: boolean  
-        - name: duration
-          in: header
-          required: false
-          type: integer    
       responses:
         '200':
-          description: successful operation
+          description: Successful operation
           schema:
             $ref: '#/definitions/BooleanReponseDefinition'
         '400':
           description: Invalid ID supplied
         '404':
-          description: Pet not found         
-  /pet:
+          description: Not found         
+  /automateWatering:
     post:
       tags:
-        - pet
-      summary: Add a new pet to the store
-      description: ''
-      operationId: addPet
+        - BalconyController
+      summary: Run automate watering system
+      description: 'Run automate watering system with optional parameter duration for stop cycle'
+      operationId: postAutomation
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
-        - in: body
-          name: body
-          description: Pet object that needs to be added to the store
-          required: true
-          schema:
-            $ref: '#/definitions/Pet'
-      responses:
-        '405':
-          description: Invalid input'
-    put:
-      tags:
-        - pet
-      summary: Update an existing pet
-      description: ''
-      operationId: updatePet
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - in: body
-          name: body
-          description: Pet object that needs to be added to the store
-          required: true
-          schema:
-            $ref: '#/definitions/Pet'
-      responses:
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-        '405':
-          description: Validation exception
-  '/pet/{petId}':
-    get:
-      tags:
-        - pet
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: getPetById
-      produces:
-        - application/json
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet to return
-          required: true
-          type: integer
-          format: int64
-      responses:
-        '200':
-          description: successful operation
-          schema:
-            $ref: '#/definitions/Pet'
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-    post:
-      tags:
-        - pet
-      summary: Updates a pet in the store with form data
-      description: ''
-      operationId: updatePetWithForm
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet that needs to be updated
-          required: true
-          type: integer
-          format: int64
-        - name: name
-          in: formData
-          description: Updated name of the pet
-          required: false
-          type: string
-        - name: status
-          in: formData
-          description: Updated status of the pet
-          required: false
-          type: string
-      responses:
-        '405':
-          description: Invalid input
-    delete:
-      tags:
-        - pet
-      summary: Deletes a pet
-      description: ''
-      operationId: deletePet
-      produces:
-        - application/json
-      parameters:
-        - name: api_key
+        - name: duration
           in: header
           required: false
-          type: string
-        - name: petId
-          in: path
-          description: Pet id to delete
-          required: true
-          type: integer
-          format: int64
+          type: integer  
       responses:
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
-  '/pet/{petId}/uploadImage':
+        '200':
+          description: Successful operation
+  /restart:
     post:
       tags:
-        - pet
-      summary: uploads an image
-      description: ''
-      operationId: uploadFile
+        - BalconyController
+      summary: Reboot Raspberry Pi Zero W
+      description: 'Reboot Raspberry Pi Zero W'
+      operationId: postRestart
       consumes:
-        - multipart/form-data
+        - application/json
       produces:
         - application/json
       parameters:
-        - name: petId
-          in: path
-          description: ID of pet to update
-          required: true
-          type: integer
-          format: int64
-        - name: additionalMetadata
-          in: formData
-          description: Additional data to pass to server
+        - name: duration
+          in: header
           required: false
-          type: string
-        - name: file
-          in: formData
-          description: file to upload
-          required: false
-          type: file
+          type: integer  
       responses:
         '200':
-          description: successful operation
-          schema:
-            $ref: '#/definitions/ApiResponse'
+          description: Successful operation
+  /python:
+    post:
+      tags:
+        - BalconyController
+      summary: Run python script (Camera module)
+      description: 'Manipulating with camera'
+      operationId: postPython
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: duration
+          in: header
+          required: false
+          type: integer  
+      responses:
+        '200':
+          description: Successful operation          
 definitions:
   SensorsResponseEntity:
     type: object
@@ -249,14 +229,6 @@ definitions:
         properties:
           enabled:
             type: boolean
-  Pet:
-    type: object
-    properties:
-      id:
-        type: integer
-        format: int64
-      data:
-        $ref: '#/definitions/SensorsResponseEntity'
   ApiResponse:
     type: object
     properties:

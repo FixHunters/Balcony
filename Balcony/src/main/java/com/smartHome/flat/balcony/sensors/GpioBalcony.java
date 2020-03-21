@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.activation.DataHandler;
@@ -31,6 +32,9 @@ import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinPullResistance;
 import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.i2c.I2CBus;
+import com.pi4j.io.i2c.I2CFactory;
+import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 import com.pi4j.wiringpi.Spi;
 
 /**
@@ -43,35 +47,35 @@ public class GpioBalcony {
 	private static final Logger log = LoggerFactory.getLogger(GpioBalcony.class);
 
 	Pin pinWaterPump = RaspiPin.GPIO_00; // RELAY GPIO_25, LED GPIO_05
-	Pin pinRainSensor = RaspiPin.GPIO_02; // bolo GPIO_27
-	Pin pinRainSensorVcc = RaspiPin.GPIO_23;
-	Pin pinSoilSensor = RaspiPin.GPIO_29;
-	Pin pinVinADC = RaspiPin.GPIO_21; // bolo GPIO_03
+	Pin pinWaterLevelSensor = RaspiPin.GPIO_26; // bolo GPIO_27
+	Pin pinVccWaterLevelSensor = RaspiPin.GPIO_27;
+	Pin pinSoilSensor = RaspiPin.GPIO_11;
+	Pin pinVccSoilSensor = RaspiPin.GPIO_31;
+	Pin pinVccADC = RaspiPin.GPIO_21; // bolo GPIO_03
 	Pin pinVccPIR = RaspiPin.GPIO_28;
-	Pin pinOutPIR = RaspiPin.GPIO_15;
+	Pin pinOutPIR = RaspiPin.GPIO_15;// bolo GPIO_15
+	Pin pinVccBH1750 = RaspiPin.GPIO_06;
+	Pin pinPowerBank = RaspiPin.GPIO_03;
 
 	final byte TEMPERATURE_LSB = (byte) 0b10011010;
 	final byte WRITE_MSB = (byte) 0b11000011;
 	final byte WRITE_LSB = (byte) 0b10001010;
 	final byte CONFIG = (byte) 0b00000000;
-	final double adcConversion = 0.0002658626; //actual 1.2Mohm adc conversion
+	final double adcConversion = 0.0002658626; // actual 1.2Mohm adc conversion
 	final double temperatureConversion = 0.03125;
 
 	private Boolean state;
-	
+
 	public enum DataPacket {
-	    DATA("Data"),
-	    CONFIG("Config"),
-	    TEMPERATURE("Temperature"),
-	    PERCENTAGE("Percentage");
-	 
-	    public final String label;
-	 
-	    private DataPacket(String label) {
-	        this.label = label;
-	    }
+		DATA("Data"), CONFIG("Config"), TEMPERATURE("Temperature"), PERCENTAGE("Percentage");
+
+		public final String label;
+
+		private DataPacket(String label) {
+			this.label = label;
+		}
 	}
-	
+
 	Session session;
 
 	public double adcFunction() throws InterruptedException {
@@ -80,7 +84,7 @@ public class GpioBalcony {
 		GpioController gpio = GpioFactory.getInstance();
 
 		// Enable Vcc pin
-		GpioPinDigitalOutput inputPinOutputVccOut = gpio.provisionDigitalOutputPin(pinVinADC, PinState.HIGH);
+		GpioPinDigitalOutput inputPinOutputVccOut = gpio.provisionDigitalOutputPin(pinVccADC, PinState.HIGH);
 
 		Thread.sleep(500);
 
@@ -110,7 +114,7 @@ public class GpioBalcony {
 	}
 
 	/**
-	 *  Establish data conversion for specific packet
+	 * Establish data conversion for specific packet
 	 * 
 	 * @param packet
 	 * @param dataPacket
@@ -134,12 +138,12 @@ public class GpioBalcony {
 		}
 		if (dataPacket.equals(DataPacket.PERCENTAGE)) {
 			double resultData = (short) (packet[0] * 256) + packet[1];
-			double Vmax = 4.03;
+			double Vmax = 4.2;
 			double Vmin = 2.9;
 			double Vcur = resultData * adcConversion;
-			finalResult = ((Vcur-Vmin)*100)/(Vmax-Vmin);
-			log.info("Battery Volage: {}V", Math.round(Vcur * 10000.0)/10000.0);
-			log.info("Battery Percentage: {}%", Math.round(finalResult * 100.0)/100.0);	
+			finalResult = ((Vcur - Vmin) * 100) / (Vmax - Vmin);
+			log.info("Battery Volage: {}V", Math.round(Vcur * 10000.0) / 10000.0);
+			log.info("Battery Percentage: {}%", Math.round(finalResult * 100.0) / 100.0);
 		}
 
 		return finalResult;
@@ -148,7 +152,8 @@ public class GpioBalcony {
 	/**
 	 * Write/read transaction over the selected SPI bus
 	 * 
-	 * @param packet 32bit WRITE_MSB  WRITE_LSB CONFIG CONFIG
+	 * @param packet
+	 *            32bit WRITE_MSB WRITE_LSB CONFIG CONFIG
 	 * @return true
 	 */
 	public boolean transferSpiData(short[] packet) {
@@ -174,41 +179,53 @@ public class GpioBalcony {
 		return true;
 	}
 
-	public PinState waterCheck() throws InterruptedException {
-		// create gpio controller
-		GpioController gpio = GpioFactory.getInstance();
-
-		// provision gpio pin as an input pin with its internal pull down
-		// resistor enabled
-		GpioPinDigitalInput inputPin = gpio.provisionDigitalInputPin(pinSoilSensor, PinPullResistance.PULL_DOWN);
-		log.info("<GpioBalcony> GPIO check state water on pinSoilSensor pin: " + pinSoilSensor + " State: "
-				+ inputPin.getState().toString());
-		inputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
-		gpio.shutdown();
-		gpio.unprovisionPin(inputPin);
-		return inputPin.getState();
-	}
-
-	public PinState rainDropsCheck() throws InterruptedException {
+	public Boolean waterCheck() throws InterruptedException {
 		// create gpio controller
 		GpioController gpio = GpioFactory.getInstance();
 
 		// Enable Vcc pin
-		GpioPinDigitalOutput inputPinOutputVccOut = gpio.provisionDigitalOutputPin(pinRainSensorVcc, PinState.HIGH);
-		log.info("<GpioBalcony> Enable Vcc pin for RainDrops senzor, Pin: " + pinRainSensorVcc + " State: "
+		GpioPinDigitalOutput inputPinOutputVccOut = gpio.provisionDigitalOutputPin(pinVccWaterLevelSensor, PinState.HIGH);
+		log.info("<GpioBalcony> Enable Vcc pin for RainDrops senzor, Pin: " + pinVccWaterLevelSensor + " State: "
 				+ inputPinOutputVccOut.getState().toString());
 
 		// provision gpio pin as an input pin with its internal pull down
-		// resistor enabled
-		GpioPinDigitalInput inputPin = gpio.provisionDigitalInputPin(pinRainSensor, PinPullResistance.PULL_DOWN);
-		log.info("<GpioBalcony> GPIO check state RainDrops sensor, Pin: " + pinRainSensor + " State: "
-				+ inputPin.getState().toString());
+		GpioPinDigitalInput inputPin = gpio.provisionDigitalInputPin(pinWaterLevelSensor, PinPullResistance.PULL_DOWN);
+		log.info("<GpioBalcony> GPIO check state RainDrops sensor, Pin: " + pinWaterLevelSensor + " State: " + inputPin.getState().toString());
 		inputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
 		inputPinOutputVccOut.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
 		gpio.shutdown();
 		gpio.unprovisionPin(inputPin);
 		gpio.unprovisionPin(inputPinOutputVccOut);
-		return inputPin.getState();
+		if (inputPin.getState().isHigh())
+			return true;
+		else
+			return false;
+
+	}
+
+	public Boolean soilHumidityCheck() throws InterruptedException {
+		// create gpio controller
+		GpioController gpio = GpioFactory.getInstance();
+
+		// Enable Vcc pin
+		GpioPinDigitalOutput inputPinOutputVccOut = gpio.provisionDigitalOutputPin(pinVccSoilSensor, PinState.HIGH);
+		log.info("<GpioBalcony> Enable Vcc pin for SoilSensor senzor, Pin: " + pinVccSoilSensor + " State: "
+				+ inputPinOutputVccOut.getState().toString());
+
+		// provision gpio pin as an input pin with its internal pull down
+		// resistor enabled
+		GpioPinDigitalInput inputPin = gpio.provisionDigitalInputPin(pinSoilSensor, PinPullResistance.PULL_DOWN);
+		log.info("<GpioBalcony> GPIO check state SoilSensor sensor, Pin: " + pinSoilSensor + " State: " + inputPin.getState().toString());
+		inputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
+		inputPinOutputVccOut.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
+		gpio.shutdown();
+		gpio.unprovisionPin(inputPin);
+		gpio.unprovisionPin(inputPinOutputVccOut);
+		if (inputPin.getState().isHigh())
+			return true;
+		else
+			return false;
+
 	}
 
 	public PinState waterPumpCheck() throws InterruptedException {
@@ -216,10 +233,8 @@ public class GpioBalcony {
 		GpioController gpio = GpioFactory.getInstance();
 
 		// provision gpio pin as an input pin with its internal pull down
-		// resistor enabled
 		GpioPinDigitalInput inputPin = gpio.provisionDigitalInputPin(pinWaterPump);
-		log.info("<GpioBalcony> GPIO check state checkWaterPump, Pin: " + pinWaterPump + " State: "
-				+ inputPin.getState().toString());
+		log.info("<GpioBalcony> GPIO check state checkWaterPump, Pin: " + pinWaterPump + " State: " + inputPin.getState().toString());
 		PinState pinState = inputPin.getState();
 		inputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
 		gpio.shutdown();
@@ -233,8 +248,7 @@ public class GpioBalcony {
 
 		// provision gpio pin as an output pin with PinState HIGH
 		GpioPinDigitalOutput outputPin = gpio.provisionDigitalOutputPin(pinWaterPump, PinState.HIGH);
-		log.info("<GpioBalcony> GPIO StartWaterPump, Pin: " + pinWaterPump + " State: "
-				+ outputPin.getState().toString());
+		log.info("<GpioBalcony> GPIO StartWaterPump, Pin: " + pinWaterPump + " State: " + outputPin.getState().toString());
 
 		outputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
 		gpio.shutdown();
@@ -247,8 +261,7 @@ public class GpioBalcony {
 
 		// provision gpio pin as an output pin with PinState LOW
 		GpioPinDigitalOutput outputPin = gpio.provisionDigitalOutputPin(pinWaterPump, PinState.LOW);
-		log.info("<GpioBalcony> GPIO StopWaterPump, Pin: " + pinWaterPump + " State: "
-				+ outputPin.getState().toString());
+		log.info("<GpioBalcony> GPIO StopWaterPump, Pin: " + pinWaterPump + " State: " + outputPin.getState().toString());
 
 		outputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
 		gpio.shutdown();
@@ -257,14 +270,12 @@ public class GpioBalcony {
 
 	public void waterPumpAutomat(int workTime) throws InterruptedException {
 		GpioController gpio = GpioFactory.getInstance();
-		GpioPinDigitalInput inputPinWaterCheck = gpio.provisionDigitalInputPin(pinSoilSensor,
-				PinPullResistance.PULL_DOWN);
+		GpioPinDigitalInput inputPinWaterCheck = gpio.provisionDigitalInputPin(pinSoilSensor, PinPullResistance.PULL_DOWN);
 		GpioPinDigitalOutput outputPinWaterPump = gpio.provisionDigitalOutputPin(pinWaterPump);
 
 		String lineSeparator = System.getProperty("line.separator");
-		log.info("<GpioBalcony> GPIO WaterPumpAutomat, Pin: " + pinWaterPump + " State: "
-				+ outputPinWaterPump.getState().toString() + lineSeparator + "PinWaterCheck, Pin: " + pinSoilSensor
-				+ " State: " + inputPinWaterCheck.getState().toString());
+		log.info("<GpioBalcony> GPIO WaterPumpAutomat, Pin: " + pinWaterPump + " State: " + outputPinWaterPump.getState().toString() + lineSeparator
+				+ "PinWaterCheck, Pin: " + pinSoilSensor + " State: " + inputPinWaterCheck.getState().toString());
 
 		automatWaterPumpListener(inputPinWaterCheck, outputPinWaterPump, workTime);
 
@@ -276,11 +287,10 @@ public class GpioBalcony {
 		gpio.unprovisionPin(outputPinWaterPump);
 	}
 
-	public void automatWaterPumpListener(GpioPinDigitalInput inputPin, GpioPinDigitalOutput outputPin, int workTime)
-			throws InterruptedException {
+	public void automatWaterPumpListener(GpioPinDigitalInput inputPin, GpioPinDigitalOutput outputPin, int workTime) throws InterruptedException {
 
-		log.info("<GpioBalcony> I turn on the water pump started as long as the soilSensor registers water on pin: "
-				+ inputPin + "or does not set the watering time: " + workTime + "s");
+		log.info("<GpioBalcony> I turn on the water pump started as long as the soilSensor registers water on pin: " + inputPin
+				+ "or does not set the watering time: " + workTime + "s");
 		do {
 
 			if (inputPin.getState().equals(PinState.HIGH))
@@ -290,9 +300,9 @@ public class GpioBalcony {
 		} while (inputPin.getState().equals(PinState.HIGH) && workTime > 0);
 		log.info("<GpioBalcony> I turn on the water pump finished");
 	}
-		
+
 	public Boolean checkMotionSensorPIR() throws InterruptedException {
-		
+
 		// create gpio controller
 		final GpioController gpio = GpioFactory.getInstance();
 		GpioPinDigitalInput inputPIRCheck = gpio.provisionDigitalInputPin(pinOutPIR, PinPullResistance.PULL_DOWN);
@@ -310,8 +320,13 @@ public class GpioBalcony {
 		gpio.shutdown();
 		gpio.unprovisionPin(inputPIRCheck);
 		return state;
+
+		/*
+		 * PrintTask printTask = new PrintTask("task"); printTask.run(); return
+		 * true;
+		 */
 	}
-	
+
 	public void executePython(String mode) {
 		String createPath = "/home/pi/Project/" + mode + ".py";
 		ProcessBuilder pb = new ProcessBuilder("sudo", "python", createPath);
@@ -326,7 +341,7 @@ public class GpioBalcony {
 				out = out + String.valueOf((char) ch);
 			}
 			log.info("<Python script {}> {}", mode, out);
-			
+
 			reader.close();
 			out = "";
 		} catch (IOException e) {
@@ -344,76 +359,125 @@ public class GpioBalcony {
 		 * System.out.print((char)ch); } } catch (IOException e) { }
 		 */
 	}
-	
 
-/**
- * Utility method to send image in email body
- * @param session
- * @param toEmail
- * @param subject
- * @param body
- */
-public static void sendImageEmail(Session session, String toEmail, String subject, String body){
-	try{
-         MimeMessage msg = new MimeMessage(session);
-         msg.addHeader("Content-type", "text/HTML; charset=UTF-8");
-	     msg.addHeader("format", "flowed");
-	     msg.addHeader("Content-Transfer-Encoding", "8bit");
-	      
-	     msg.setFrom(new InternetAddress("no_reply@example.com", "NoReply-JD"));
+	/**
+	 * method for check light BH1750
+	 *
+	 * 
+	 * @return BigDecimal
+	 * @throws UnsupportedBusNumberException
+	 * @throws IOException
+	 */
+	public BigDecimal getLight() throws UnsupportedBusNumberException, IOException {
+		// create gpio controller
+		GpioController gpio = GpioFactory.getInstance();
 
-	     msg.setReplyTo(InternetAddress.parse("reply@example.com", false));
+		// Enable Vcc pin
+		GpioPinDigitalOutput pinVcc = gpio.provisionDigitalOutputPin(pinVccBH1750, PinState.HIGH);
+		log.info("<GpioBalcony> Enable Vcc pin for BH1750 Light senzor, Pin: " + pinVccBH1750 + " State: " + pinVcc.getState().toString());
+		I2CBus bus;
+		bus = I2CFactory.getInstance(I2CBus.BUS_3);
+		BH1750 bh1750 = new BH1750(bus);
 
-	     msg.setSubject(subject, "UTF-8");
+		bh1750.init();
 
-	     msg.setSentDate(new Date());
+		log.info("Light sensor lx: " + bh1750.read().toString());
 
-	     msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail, false));
-	      
-         // Create the message body part
-         BodyPart messageBodyPart = new MimeBodyPart();
-
-         messageBodyPart.setText(body);
-         
-         // Create a multipart message for attachment
-         Multipart multipart = new MimeMultipart();
-
-         // Set text message part
-         multipart.addBodyPart(messageBodyPart);
-
-         // Second part is image attachment
-         messageBodyPart = new MimeBodyPart();
-         String filename = "image.png";
-         String image = "/home/pi/Desktop/image.jpg";
-         DataSource source = new FileDataSource(image);
-         messageBodyPart.setDataHandler(new DataHandler(source));
-         messageBodyPart.setFileName(filename);
-         //Trick is to add the content-id header here
-         messageBodyPart.setHeader("Content-ID", "image_id");
-         multipart.addBodyPart(messageBodyPart);
-
-         //third part for displaying image in the email body
-         messageBodyPart = new MimeBodyPart();
-         messageBodyPart.setContent("<h1>Attached Image</h1>" +
-        		     "<img src='cid:image_id'>", "text/html");
-         multipart.addBodyPart(messageBodyPart);
-         
-         //Set the multipart message to the email message
-         msg.setContent(multipart);
-
-         // Send message
-         Transport.send(msg);
-         System.out.println("EMail Sent Successfully with image!!");
-      }catch (MessagingException e) {
-         e.printStackTrace();
-      } catch (UnsupportedEncodingException e) {
-		 e.printStackTrace();
+		pinVcc.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
+		gpio.shutdown();
+		gpio.unprovisionPin(pinVcc);
+		return bh1750.read();
 	}
+
+	/**
+	 * Utility method to send image in email body
+	 * 
+	 * @param session
+	 * @param toEmail
+	 * @param subject
+	 * @param body
+	 */
+	public static void sendImageEmail(Session session, String toEmail, String subject, String body) {
+		try {
+			MimeMessage msg = new MimeMessage(session);
+			msg.addHeader("Content-type", "text/HTML; charset=UTF-8");
+			msg.addHeader("format", "flowed");
+			msg.addHeader("Content-Transfer-Encoding", "8bit");
+
+			msg.setFrom(new InternetAddress("no_reply@example.com", "NoReply-JD"));
+
+			msg.setReplyTo(InternetAddress.parse("reply@example.com", false));
+
+			msg.setSubject(subject, "UTF-8");
+
+			msg.setSentDate(new Date());
+
+			msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail, false));
+
+			// Create the message body part
+			BodyPart messageBodyPart = new MimeBodyPart();
+
+			messageBodyPart.setText(body);
+
+			// Create a multipart message for attachment
+			Multipart multipart = new MimeMultipart();
+
+			// Set text message part
+			multipart.addBodyPart(messageBodyPart);
+
+			// Second part is image attachment
+			messageBodyPart = new MimeBodyPart();
+			String filename = "image.png";
+			String image = "/home/pi/Desktop/image.jpg";
+			DataSource source = new FileDataSource(image);
+			messageBodyPart.setDataHandler(new DataHandler(source));
+			messageBodyPart.setFileName(filename);
+			// Trick is to add the content-id header here
+			messageBodyPart.setHeader("Content-ID", "image_id");
+			multipart.addBodyPart(messageBodyPart);
+
+			// third part for displaying image in the email body
+			messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setContent("<h1>Attached Image</h1>" + "<img src='cid:image_id'>", "text/html");
+			multipart.addBodyPart(messageBodyPart);
+
+			// Set the multipart message to the email message
+			msg.setContent(multipart);
+
+			// Send message
+			Transport.send(msg);
+			System.out.println("EMail Sent Successfully with image!!");
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void enablePW() throws InterruptedException {
+		// create gpio controller
+		GpioController gpio = GpioFactory.getInstance();
+
+		// provision gpio pin as an output pin with PinState HIGH
+		GpioPinDigitalOutput outputPin = gpio.provisionDigitalOutputPin(pinPowerBank, PinState.HIGH);
+		log.info("<GpioBalcony> GPIO pinPowerBank, Pin: " + pinPowerBank + " State: " + outputPin.getState().toString());
+
+		outputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
+		gpio.shutdown();
+		gpio.unprovisionPin(outputPin);
+	}
+
+	public void disablePW() throws InterruptedException {
+		// create gpio controller
+		GpioController gpio = GpioFactory.getInstance();
+
+		// provision gpio pin as an output pin with PinState LOW
+		GpioPinDigitalOutput outputPin = gpio.provisionDigitalOutputPin(pinPowerBank, PinState.LOW);
+		log.info("<GpioBalcony> GPIO pinPowerBank, Pin: " + pinPowerBank + " State: " + outputPin.getState().toString());
+
+		outputPin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
+		gpio.shutdown();
+		gpio.unprovisionPin(outputPin);
+	}
+
 }
-
-
-
-}
-	
-	
-

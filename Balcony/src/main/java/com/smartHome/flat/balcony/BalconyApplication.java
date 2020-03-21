@@ -29,15 +29,12 @@ public class BalconyApplication {
 		ApplicationArguments args = context.getBean(ApplicationArguments.class);
 
 		Thread thread = new Thread(() -> {
-			logger.info("Application started with command-line arguments: {}", Arrays.toString(args.getSourceArgs()));
-			logger.info("NonOptionArgs: {}", args.getNonOptionArgs());
-			logger.info("OptionNames: {}", args.getOptionNames());
+			logger.debug("Application started with command-line arguments: {}", Arrays.toString(args.getSourceArgs()));
+			logger.debug("NonOptionArgs: {}", args.getNonOptionArgs());
+			logger.debug("OptionNames: {}", args.getOptionNames());
 			for (String name : args.getOptionNames()) {
-				logger.info("arg-" + name + "=" + args.getOptionValues(name));
+				logger.debug("arg-" + name + "=" + args.getOptionValues(name));
 			}
-
-			boolean containsOption = args.containsOption("person.name");
-			logger.info("Contains person.name: " + containsOption);
 
 			context.close();
 			context = SpringApplication.run(BalconyApplication.class, args.getSourceArgs());
